@@ -1,0 +1,19 @@
+service: () -> {
+    addCollection: (record {weight:nat64; truckId:text; userId:text}) -> (variant {Ok:record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+    addTruck: (record {registration:text; district:text; capacity:nat64; driverName:text}) -> (variant {Ok:record {id:text; registration:text; district:text; assignedUsersIds:vec text; capacity:nat64; driverName:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+    addUser: (record {name:text; email:text; district:text; address:text; phone:text}) -> (variant {Ok:record {id:text; name:text; email:text; district:text; address:text; phone:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+    getCollection: (text) -> (variant {Ok:record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}}) query;
+    getCollections: () -> (vec record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}) query;
+    getCollectionsByTruckId: (text) -> (vec record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}) query;
+    getCollectionsByUserId: (text) -> (vec record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}) query;
+    getTruck: (text) -> (variant {Ok:record {id:text; registration:text; district:text; assignedUsersIds:vec text; capacity:nat64; driverName:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}}) query;
+    getTrucks: () -> (vec record {id:text; registration:text; district:text; assignedUsersIds:vec text; capacity:nat64; driverName:text}) query;
+    getTrucksByDistrict: (nat64) -> (vec record {id:text; registration:text; district:text; assignedUsersIds:vec text; capacity:nat64; driverName:text}) query;
+    getUser: (text) -> (variant {Ok:record {id:text; name:text; email:text; district:text; address:text; phone:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}}) query;
+    getUsers: () -> (vec record {id:text; name:text; email:text; district:text; address:text; phone:text}) query;
+    getUsersByTruckId: (text) -> (vec record {id:text; name:text; email:text; district:text; address:text; phone:text}) query;
+    requestCollection: (text) -> (variant {Ok:record {truckId:text; userId:text; address:text; truckRegistration:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+    searchCollections: (text) -> (vec record {id:text; weight:nat64; userName:text; truckId:text; userId:text; date:text; time:text; district:text; address:text}) query;
+    updateTruck: (record {id:text; district:text; capacity:nat64; driverName:text}) -> (variant {Ok:record {id:text; registration:text; district:text; assignedUsersIds:vec text; capacity:nat64; driverName:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+    updateUser: (record {id:text; email:text; district:text; address:text; phone:text}) -> (variant {Ok:record {id:text; name:text; email:text; district:text; address:text; phone:text}; Err:variant {CreationFailed:text; InvalidPayload:text; NotFound:text}});
+}
