@@ -12,101 +12,87 @@ import {
   Result,
   Canister,
 } from "azle";
-// Importing UUID v4 for generating unique identifiers
-// @ts-ignore
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * This type represents an collection that can be listed on an collection manager.
- * It contains basic properties needed to define an collection.
- */
-const Collection = Record({
-  id: text,
-  userId: text,
-  userName: text,
-  truckId: text,
-  date: text,
-  time: text,
-  address: text,
-  district: text,
-  weight: nat64,
-});
+// Define types for records and payloads
+type Collection = Record<{
+  id: text;
+  userId: text;
+  userName: text;
+  truckId: text;
+  date: text;
+  time: text;
+  address: text;
+  district: text;
+  weight: nat64;
+}>;
 
-// Payload structure for creating an collection
-const CollectionPayload = Record({
-  userId: text,
-  truckId: text,
-  weight: nat64,
-});
+type CollectionPayload = Record<{
+  userId: text;
+  truckId: text;
+  weight: nat64;
+}>;
 
-// Structure representing a user
-const User = Record({
-  id: text,
-  name: text,
-  email: text,
-  phone: text,
-  address: text,
-  district: text,
-});
+type User = Record<{
+  id: text;
+  name: text;
+  email: text;
+  phone: text;
+  address: text;
+  district: text;
+}>;
 
-// Payload structure for creating a user
-const UserPayload = Record({
-  name: text,
-  email: text,
-  phone: text,
-  address: text,
-  district: text,
-});
+type UserPayload = Record<{
+  name: text;
+  email: text;
+  phone: text;
+  address: text;
+  district: text;
+}>;
 
-// Payload structure for updating a user
-const UpdateUserPayload = Record({
-  id: text,
-  email: text,
-  phone: text,
-  address: text,
-  district: text,
-});
+type UpdateUserPayload = Record<{
+  id: text;
+  email: text;
+  phone: text;
+  address: text;
+  district: text;
+}>;
 
-// Record structure representing truck information
-const Truck = Record({
-  id: text,
-  registration: text,
-  driverName: text,
-  district: text,
-  capacity: nat64,
-  assignedUsersIds: Vec(text),
-});
+type Truck = Record<{
+  id: text;
+  registration: text;
+  driverName: text;
+  district: text;
+  capacity: nat64;
+  assignedUsersIds: Vec<text>;
+}>;
 
-// Payload structure for adding truck
-const TruckPayload = Record({
-  registration: text,
-  driverName: text,
-  district: text,
-  capacity: nat64,
-});
+type TruckPayload = Record<{
+  registration: text;
+  driverName: text;
+  district: text;
+  capacity: nat64;
+}>;
 
-// Payload structure for updating truck
-const UpdateTruckPayload = Record({
-  id: text,
-  driverName: text,
-  district: text,
-  capacity: nat64,
-});
+type UpdateTruckPayload = Record<{
+  id: text;
+  driverName: text;
+  district: text;
+  capacity: nat64;
+}>;
 
-// Variant representing different error types
-const ErrorType = Variant({
-  NotFound: text,
-  InvalidPayload: text,
-  CreationFailed: text,
-});
+type ErrorType = Variant<{
+  NotFound: text;
+  InvalidPayload: text;
+  CreationFailed: text;
+}>;
 
-// Structure representing a truck return object
-const TruckReturn = Record({
-  userId: text,
-  truckId: text,
-  address: text,
-  truckRegistration: text,
-});
+type TruckReturn = Record<{
+  userId: text;
+  truckId: text;
+  address: text;
+  truckRegistration: text;
+}>;
 
 /**
  * `collectionsStorage` - a key-value data structure used to store collections by sellers.
@@ -125,107 +111,86 @@ const TruckReturn = Record({
  * 3) 1024 - maximum size of the value in bytes.
  * Values 2 and 3 are not used directly in the constructor but are utilized by the Azle compiler during compile time.
  */
+// Define storage for collections, trucks, and users
 const collectionsStorage = StableBTreeMap(0, text, Collection);
-const trucksStorage = StableBTreeMap(2, text, Truck);
-const usersStorage = StableBTreeMap(3, text, User);
+const trucksStorage = StableBTreeMap(1, text, Truck);
+const usersStorage = StableBTreeMap(2, text, User);
 
-// Exporting default Canister module
+// Export Canister module
 export default Canister({
-  // Function to add an collection
   addCollection: update(
     [CollectionPayload],
     Result(Collection, ErrorType),
     (payload) => {
-      // Check if the payload is a valid object
-      if (typeof payload !== "object" || Object.keys(payload).length === 0) {
-        return Err({ InvalidPayload: "invalid payload" });
+      if (!payload || typeof payload !== "object") {
+        return Err({ InvalidPayload: "Invalid payload" });
       }
 
-      // get user
       const userOpt = usersStorage.get(payload.userId);
       if ("None" in userOpt) {
-        return Err({ NotFound: `user with id=${payload.userId} not found` });
+        return Err({ NotFound: `User with id=${payload.userId} not found` });
       }
 
-      // Create an collection with a unique id generated using UUID v4
-      const collection = {
+      const user = userOpt.Some;
+      const collection: Collection = {
         id: uuidv4(),
         time: new Date().toLocaleTimeString(),
         date: new Date().toLocaleDateString(),
-        userName: userOpt.Some.name,
-        address: userOpt.Some.address,
-        district: userOpt.Some.district,
+        userName: user.name,
+        address: user.address,
+        district: user.district,
         ...payload,
       };
 
-      console.log("collection", collection);
-      // Insert the collection into the collectionsStorage
       try {
         collectionsStorage.insert(collection.id, collection);
+        return Ok(collection);
       } catch (error) {
-        console.log("error", error);
-        return Err({ CreationFailed: "creation failed due to" + error });
+        console.error("Error adding collection:", error);
+        return Err({ CreationFailed: "Failed to add collection" });
       }
-      return Ok(collection);
     }
   ),
 
-  // truck collection, assigns user to truck
   requestCollection: update(
     [text],
     Result(TruckReturn, ErrorType),
     (userId) => {
-      // get user
       const userOpt = usersStorage.get(userId);
       if ("None" in userOpt) {
-        return Err({ NotFound: `user with id=${userId} not found` });
+        return Err({ NotFound: `User with id=${userId} not found` });
       }
 
-      // get truck using filter
-      const trucksOpt = trucksStorage
-        .values()
-        .filter((truck) => truck.district === userOpt.Some.district);
+      const user = userOpt.Some;
+      const trucks = trucksStorage.values().filter((truck) => truck.district === user.district);
+      const truck = trucks.length > 0 ? trucks[0] : null;
 
-      let truckOpt = trucksOpt[0];
-
-      if (!truckOpt) {
-        truckOpt = trucksStorage.values()[0];
+      if (!truck) {
+        return Err({ NotFound: "No available trucks found" });
       }
 
-      // assign user to truck
-      if (truckOpt) {
-        const truck = truckOpt;
-        const updatedTruck = {
-          ...truck,
-          assignedUsersIds: truck.assignedUsersIds.concat(userId),
-        };
-        trucksStorage.insert(truck.id, updatedTruck);
+      const updatedTruck = {
+        ...truck,
+        assignedUsersIds: truck.assignedUsersIds.concat(userId),
+      };
+      trucksStorage.insert(truck.id, updatedTruck);
 
-        // Insert the collection into the collectionsStorage
-        return Ok({
-          userId: userId,
-          truckId: truck.id,
-          address: userOpt.Some.address,
-          truckRegistration: truck.registration,
-        });
-      } else {
-        return Err({ NotFound: `no trucks found` });
-      }
+      return Ok({
+        userId,
+        truckId: truck.id,
+        address: user.address,
+        truckRegistration: truck.registration,
+      });
     }
   ),
 
-  // Function to retrieve all collections
   getCollections: query([], Vec(Collection), () => {
     return collectionsStorage.values();
   }),
 
-  // Function to retrieve a specific collection by id
   getCollection: query([text], Result(Collection, ErrorType), (id) => {
     const collectionOpt = collectionsStorage.get(id);
-    if ("None" in collectionOpt) {
-      return Err({ NotFound: `collection with id=${id} not found` });
-    }
-    return Ok(collectionOpt.Some);
+    return collectionOpt.map((collection) => Ok(collection)).unwrapOr(Err({ NotFound: `Collection with id=${id} not found` }));
   }),
 
   // get collections by truck id
